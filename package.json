@@ -1,0 +1,13 @@
+{
+  "name": "nakayoshi-chat",
+  "version": "1.0.0",
+  "description": "仲良しチャット - A friendly chat app",
+  "scripts": {
+    "start": "node server/index.js",
+    "install-deps": "cd server && npm install",
+    "build": "echo 'No build needed'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

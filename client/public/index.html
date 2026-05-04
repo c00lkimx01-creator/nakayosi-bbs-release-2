@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仲良しチャット 🌸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+:root {
+  --bg: #0f0a1a;
+  --bg2: #1a1030;
+  --bg3: #241540;
+  --panel: #1e1535;
+  --panel2: #2a1d4a;
+  --accent: #c084fc;
+  --accent2: #f0abfc;
+  --accent3: #818cf8;
+  --gold: #fbbf24;
+  --pink: #f472b6;
+  --green: #34d399;
+  --red: #f87171;
+  --text: #ede9fe;
+  --text2: #c4b5fd;
+  --text3: #7c6fa0;
+  --border: #3d2d6a;
+  --shadow: 0 4px 24px rgba(192,132,252,0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(192,132,252,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(129,140,248,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(244,114,182,0.05) 0%, transparent 50%);
+}
+
+/* ===== SCREENS ===== */
+.screen { display: none; width: 100%; height: 100vh; }
+.screen.active { display: flex; }
+
+/* ===== AUTH SCREEN ===== */
+#auth-screen {
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.5s ease;
+}
+
+.auth-logo {
+  text-align: center;
+}
+.auth-logo h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(192,132,252,0.4));
+}
+.auth-logo p { color: var(--text2); margin-top: 8px; font-size: 0.95rem; }
+
+.auth-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 36px;
+  width: 380px;
+  max-width: 95vw;
+  box-shadow: var(--shadow), 0 0 60px rgba(192,132,252,0.08);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.auth-tab.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 12px rgba(192,132,252,0.4);
+}
+
+.auth-form { display: none; }
+.auth-form.active { display: flex; flex-direction: column; gap: 14px; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.85rem; color: var(--text2); font-weight: 600; }
+
+.form-input {
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,132,252,0.15); }
+
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  border: 1.5px solid var(--border);
+  max-height: 100px;
+  overflow-y: auto;
+}
+.icon-opt {
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  border: 2px solid transparent;
+}
+.icon-opt:hover { background: var(--panel2); }
+.icon-opt.selected { border-color: var(--accent); background: rgba(192,132,252,0.2); }
+
+.btn {
+  padding: 13px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  color: white;
+  box-shadow: 0 4px 16px rgba(192,132,252,0.35);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,132,252,0.5); }
+.btn-primary:active { transform: translateY(0); }
+.btn-danger { background: var(--red); color: white; }
+.btn-secondary { background: var(--panel2); color: var(--text2); border: 1px solid var(--border); }
+.btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+.btn-gold { background: linear-gradient(135deg, var(--gold), #f59e0b); color: #1a1000; }
+
+.admin-link {
+  text-align: center;
+  margin-top: 12px;
+}
+.admin-link a {
+  color: var(--gold);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.admin-link a:hover { opacity: 1; }
+
+.error-msg {
+  background: rgba(248,113,113,0.15);
+  border: 1px solid rgba(248,113,113,0.3);
+  color: var(--red);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  display: none;
+}
+.error-msg.show { display: block; }
+
+/* ===== CHAT SCREEN ===== */
+#chat-screen {
+  flex-direction: row;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-logo {
+  font-size: 1.1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  margin: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.user-icon-display { font-size: 1.5rem; }
+.user-info-text { flex: 1; min-width: 0; }
+.user-name { font-size: 0.85rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role-badge {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  display: inline-block;
+  margin-top: 2px;
+}
+.role-admin { background: rgba(251,191,36,0.2); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+.role-subadmin { background: rgba(192,132,252,0.2); color: var(--accent); border: 1px solid rgba(192,132,252,0.3); }
+.role-user { background: rgba(196,181,253,0.1); color: var(--text3); border: 1px solid var(--border); }
+
+.sidebar-section {
+  padding: 10px 14px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.create-room-btn {
+  width: 22px; height: 22px;
+  border: none;
+  background: var(--panel2);
+  color: var(--accent);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.create-room-btn:hover { background: var(--accent); color: white; }
+
+.room-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+.room-list::-webkit-scrollbar { width: 4px; }
+.room-list::-webkit-scrollbar-track { background: transparent; }
+.room-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.room-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.room-item:hover { background: var(--panel2); }
+.room-item.active { background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.25); }
+.room-icon-display { font-size: 1.3rem; width: 32px; text-align: center; }
+.room-info { flex: 1; min-width: 0; }
+.room-name-text { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-members { font-size: 0.72rem; color: var(--text3); }
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+}
+.sidebar-footer .btn { flex: 1; font-size: 0.78rem; }
+
+/* Online users panel */
+.online-panel {
+  width: 180px;
+  min-width: 180px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.online-header {
+  padding: 18px 14px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.online-list { flex: 1; overflow-y: auto; padding: 8px; }
+.online-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 2px;
+}
+.online-user:hover { background: var(--panel2); }
+.online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 6px var(--green); }
+.online-icon { font-size: 1.1rem; }
+.online-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Main chat area */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+}
+.chat-room-icon { font-size: 1.5rem; }
+.chat-room-name { font-size: 1.1rem; font-weight: 700; }
+.chat-room-count { font-size: 0.8rem; color: var(--text3); }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 6px; }
+.messages::-webkit-scrollbar-track { background: transparent; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.msg-wrap {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+  animation: msgSlide 0.2s ease;
+}
+@keyframes msgSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.msg-avatar { font-size: 1.5rem; width: 36px; text-align: center; flex-shrink: 0; margin-top: 2px; }
+.msg-body { flex: 1; min-width: 0; }
+.msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.msg-username {
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.msg-username:hover { text-decoration: underline; }
+.msg-username.admin { color: var(--gold); }
+.msg-username.subadmin { color: var(--accent); }
+.msg-username.user { color: var(--text2); }
+.msg-time { font-size: 0.72rem; color: var(--text3); }
+.msg-content { font-size: 0.92rem; line-height: 1.5; word-break: break-word; }
+.msg-stamp { font-size: 2.5rem; line-height: 1; }
+
+.msg-system {
+  text-align: center;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  color: var(--text3);
+  background: rgba(255,255,255,0.03);
+  border-radius: 999px;
+  margin: 4px auto;
+  max-width: 400px;
+}
+.msg-pm {
+  background: rgba(192,132,252,0.08);
+  border: 1px solid rgba(192,132,252,0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 4px 0;
+}
+.msg-pm-label { font-size: 0.72rem; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+.msg-omikuji {
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+/* Input area */
+.chat-input-area {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.stamp-bar {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.stamp-bar.show { display: flex; }
+.stamp-btn {
+  font-size: 1.4rem;
+  padding: 4px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  transition: transform 0.15s;
+}
+.stamp-btn:hover { transform: scale(1.2); background: var(--panel2); }
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.chat-input {
+  flex: 1;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  outline: none;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--text3); }
+
+.input-btns { display: flex; gap: 6px; }
+.icon-btn {
+  width: 42px; height: 42px;
+  border: none;
+  background: var(--panel2);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.icon-btn:hover { background: var(--accent); color: white; transform: translateY(-1px); }
+.send-btn {
+  width: 42px; height: 42px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(192,132,252,0.4);
+}
+.send-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(192,132,252,0.5); }
+
+/* ===== MODALS ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  width: 360px;
+  max-width: 95vw;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+.modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+.modal-footer { display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end; }
+
+/* Admin Panel */
+#admin-panel {
+  position: fixed;
+  top: 0; right: 0;
+  height: 100vh;
+  width: 300px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  z-index: 500;
+  display: none;
+  flex-direction: column;
+  padding: 20px;
+  gap: 14px;
+  overflow-y: auto;
+  animation: slideLeft 0.25s ease;
+}
+#admin-panel.show { display: flex; }
+@keyframes slideLeft { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+.admin-panel-title { font-size: 1rem; font-weight: 800; color: var(--gold); display: flex; align-items: center; justify-content: space-between; }
+.admin-section { background: var(--bg2); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
+.admin-section-title { font-size: 0.78rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-label { font-size: 0.85rem; font-weight: 600; }
+.toggle {
+  width: 44px; height: 24px;
+  background: var(--bg3);
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  border: 1.5px solid var(--border);
+  transition: all 0.2s;
+}
+.toggle.on { background: var(--green); border-color: var(--green); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 1px; left: 1px;
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* Notification */
+.notif {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 2000;
+  max-width: 320px;
+  box-shadow: var(--shadow);
+  animation: notifIn 0.3s ease;
+  display: none;
+}
+.notif.show { display: block; }
+.notif.error { border-color: var(--red); color: var(--red); }
+.notif.success { border-color: var(--green); color: var(--green); }
+.notif.info { border-color: var(--accent); color: var(--accent); }
+@keyframes notifIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Command help */
+.cmd-help {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 0.8rem;
+  min-width: 220px;
+  display: none;
+  z-index: 100;
+}
+.cmd-help.show { display: block; }
+.cmd-item { padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.cmd-item:hover { background: rgba(192,132,252,0.1); }
+.cmd-key { color: var(--accent); font-weight: 700; }
+.cmd-desc { color: var(--text3); margin-left: 4px; }
+
+/* Scrollbar global */
+*::-webkit-scrollbar { width: 5px; height: 5px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .online-panel { display: none; }
+  .sidebar { width: 220px; min-width: 220px; }
+}
+@media (max-width: 560px) {
+  .sidebar { display: none; }
+  #auth-screen { padding: 16px; }
+  .auth-card { padding: 24px 18px; }
+}
+
+/* PM highlight */
+.has-pm { animation: pmPulse 0.5s ease 3; }
+@keyframes pmPulse { 0%,100% { background: transparent; } 50% { background: rgba(192,132,252,0.15); } }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="screen active" id="auth-screen">
+  <div class="auth-logo">
+    <h1>🌸 仲良しチャット</h1>
+    <p>みんなで楽しくおしゃべりしよう！</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="auth-tab" onclick="switchAuthTab('signup')">サインアップ</button>
+    </div>
+
+    <!-- Login Form -->
+    <div class="auth-form active" id="login-form">
+      <div class="form-group">
+        <label>ユーザー名</label>
+        <input class="form-input" type="text" id="login-username" placeholder="ユーザー名を入力">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input class="form-input" type="password" id="login-password" placeholder="パスワードを入力">
+      </div>
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn btn-primary" onclick="doLogin()">ログイン 🚀</button>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="auth-form" id="signup-form">
+      <div class="form-group">
+        <label>ユーザー名（2〜20文字）</label>
+        <input class="form-input" type="text" id="signup-username" placeholder="ユーザー名を入力">
+      </div>
+      <div class="form-group">
+        <label>パスワード（4文字以上）</label>
+        <input class="form-input" type="password" id="signup-password" placeholder="パスワードを入力">
+      </div>
+      <div class="form-group">
+        <label>アイコンを選ぶ 🎭</label>
+        <div class="icon-picker" id="signup-icon-picker"></div>
+      </div>
+      <div class="error-msg" id="signup-error"></div>
+      <button class="btn btn-primary" onclick="doSignup()">アカウント作成 ✨</button>
+    </div>
+  </div>
+  <div class="admin-link">
+    <a onclick="openAdminAuth()">⚙️ 管理者としてログイン</a>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div class="screen" id="chat-screen">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">🌸 仲良しChat</span>
+    </div>
+    <div class="user-badge">
+      <div class="user-icon-display" id="my-icon">😊</div>
+      <div class="user-info-text">
+        <div class="user-name" id="my-username">ユーザー</div>
+        <span class="user-role-badge" id="my-role-badge"></span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      ROOMS
+      <button class="create-room-btn" onclick="openCreateRoom()" title="部屋を作成">＋</button>
+    </div>
+    <div class="room-list" id="room-list"></div>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary" id="admin-btn" onclick="toggleAdminPanel()" style="display:none">👑 管理</button>
+      <button class="btn btn-secondary" onclick="logout()">🚪 ログアウト</button>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <span class="chat-room-icon" id="chat-room-icon">🏠</span>
+      <div>
+        <div class="chat-room-name" id="chat-room-name">部屋を選んでください</div>
+        <div class="chat-room-count" id="chat-room-count"></div>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="msg-system">👋 部屋に参加して楽しくチャットしよう！</div>
+    </div>
+    <div class="chat-input-area">
+      <div class="stamp-bar" id="stamp-bar"></div>
+      <div style="position:relative">
+        <div class="cmd-help" id="cmd-help">
+          <div class="cmd-item" onclick="insertCmd('/おみくじ')"><span class="cmd-key">/おみくじ</span><span class="cmd-desc">運勢を占う</span></div>
+          <div class="cmd-item" onclick="insertCmd('/msg ')"><span class="cmd-key">/msg {名前} {内容}</span><span class="cmd-desc">プライベートメッセージ</span></div>
+          <div id="mod-cmds" style="display:none">
+            <div class="cmd-item" onclick="insertCmd('/ban ')"><span class="cmd-key">/ban {名前}</span><span class="cmd-desc">BANする</span></div>
+            <div class="cmd-item" onclick="insertCmd('/kick ')"><span class="cmd-key">/kick {名前}</span><span class="cmd-desc">KICKする</span></div>
+          </div>
+          <div id="admin-cmds" style="display:none">
+            <div class="cmd-item" onclick="insertCmd('/ipban ')"><span class="cmd-key">/ipban {名前}</span><span class="cmd-desc">IPBANする</span></div>
+            <div class="cmd-item" onclick="insertCmd('/unipban ')"><span class="cmd-key">/unipban {名前}</span><span class="cmd-desc">IPBAN解除</span></div>
+            <div class="cmd-item" onclick="insertCmd('/chatkill')"><span class="cmd-key">/chatkill</span><span class="cmd-desc">チャット削除</span></div>
+          </div>
+        </div>
+        <div class="input-row">
+          <div class="input-btns">
+            <button class="icon-btn" onclick="toggleStampBar()" title="スタンプ">🎭</button>
+            <button class="icon-btn" onclick="toggleCmdHelp()" title="コマンド">⌨️</button>
+          </div>
+          <textarea class="chat-input" id="chat-input" placeholder="メッセージを入力... (Enterで送信)" rows="1"
+            oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+          <button class="send-btn" onclick="sendMessage()" title="送信">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Online Panel -->
+  <div class="online-panel">
+    <div class="online-header">🟢 オンライン</div>
+    <div class="online-list" id="online-list"></div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="admin-panel">
+  <div class="admin-panel-title">
+    👑 管理パネル
+    <button class="btn btn-sm btn-secondary" onclick="toggleAdminPanel()">✕</button>
+  </div>
+  <div class="admin-section">
+    <div class="admin-section-title">認証設定</div>
+    <div class="toggle-row">
+      <span class="toggle-label">管理者ログイン</span>
+      <div class="toggle" id="toggle-admin-login" onclick="toggleSetting('adminLoginEnabled')"></div>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">管理者サインアップ</span>
+      <div class="toggle" id="toggle-admin-signup" onclick="toggleSetting('adminSignupEnabled')"></div>
+    </div>
+  </div>
+  <div class="admin-section">
+    <div class="admin-section-title">クイックコマンド</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-sm btn-danger" onclick="quickCmd('/chatkill')">💥 チャット削除</button>
+    </div>
+  </div>
+  <div class="admin-section">
+    <div class="admin-section-title">ヒント</div>
+    <p style="font-size:0.78rem;color:var(--text3);line-height:1.6">/ipban {名前}<br>/unipban {名前}<br>/ban {名前}<br>/kick {名前}<br>/chatkill</p>
+  </div>
+</div>
+
+<!-- Create Room Modal -->
+<div class="modal-overlay" id="create-room-modal">
+  <div class="modal">
+    <div class="modal-title">🏠 部屋を作成</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label>部屋名（1〜30文字）</label>
+        <input class="form-input" type="text" id="new-room-name" placeholder="例: ゲーム好き集まれ">
+      </div>
+      <div class="form-group">
+        <label>部屋アイコン</label>
+        <div class="icon-picker" id="room-icon-picker"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('create-room-modal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="createRoom()">作成 ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Auth Modal -->
+<div class="modal-overlay" id="admin-auth-modal">
+  <div class="modal">
+    <div class="modal-title">⚙️ 管理者ログイン</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label>管理者ユーザー名</label>
+        <input class="form-input" type="text" id="admin-username" placeholder="admin または subadmin">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input class="form-input" type="password" id="admin-password" placeholder="管理者パスワード">
+      </div>
+      <div class="error-msg" id="admin-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('admin-auth-modal')">キャンセル</button>
+      <button class="btn btn-gold" onclick="doAdminLogin()">ログイン 👑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ====== CONFIG ======
+const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? `http://localhost:3001`
+  : window.location.origin;
+
+// ====== STATE ======
+let socket = null;
+let authToken = null;
+let currentUser = null;
+let currentRoom = null;
+let selectedIcon = '😊';
+let selectedRoomIcon = '💬';
+let stampsVisible = false;
+let cmdHelpVisible = false;
+
+// ====== ICONS & STAMPS ======
+const userIcons = ['😊','😎','🥳','🤩','😺','🐼','🦊','🐶','🐸','🎃','👻','🌟','⚡','🔥','🌈','🍄','🎮','🎵','🌺','🌙','🦋','🐉','🤖','👽','🎭','🍕','🍣','🎂','💎','🌊'];
+const stamps = ['👍','❤️','😂','😢','😮','🔥','⭐','🎉','💯','🤔','😤','🥺','😍','🤣','😅','👏','🙏','✨','💪','🎊','🌸','🌈','🦄','🍀','💫','🎯','🎲','🎸','🎺','🎨'];
+const roomIcons = ['💬','🎮','🎵','📚','🍕','⚽','🎭','🌸','🔥','⚡','🌊','🎯','🦋','🌙','🌈','🏠','🎪','🎠','🎡','🛸','🏔️','🗺️','🎀','💡','🔮','🎲','🃏','🧩','🎻','🎹'];
+
+// ====== INIT ======
+function initIconPicker(containerId, onSelect, icons) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  icons.forEach((ic, i) => {
+    const el = document.createElement('div');
+    el.className = 'icon-opt' + (i === 0 ? ' selected' : '');
+    el.textContent = ic;
+    el.onclick = () => {
+      container.querySelectorAll('.icon-opt').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      onSelect(ic);
+    };
+    container.appendChild(el);
+  });
+}
+
+function initStampBar() {
+  const bar = document.getElementById('stamp-bar');
+  bar.innerHTML = '';
+  stamps.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'stamp-btn';
+    btn.textContent = s;
+    btn.title = s;
+    btn.onclick = () => sendStamp(s);
+    bar.appendChild(btn);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initIconPicker('signup-icon-picker', ic => selectedIcon = ic, userIcons);
+  initIconPicker('room-icon-picker', ic => selectedRoomIcon = ic, roomIcons);
+  initStampBar();
+  // Enter key for auth
+  ['login-password','login-username'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  });
+  ['signup-password','signup-username'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') doSignup(); });
+  });
+});
+
+// ====== AUTH ======
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 0) === (tab === 'login')));
+  document.getElementById('login-form').classList.toggle('active', tab === 'login');
+  document.getElementById('signup-form').classList.toggle('active', tab === 'signup');
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorEl = document.getElementById('login-error');
+  errorEl.classList.remove('show');
+  if (!username || !password) { showError(errorEl, '名前とパスワードを入力してください'); return; }
+  try {
+    const res = await fetch(`${SERVER_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(errorEl, data.error); return; }
+    startChat(data.token, data.user);
+  } catch { showError(errorEl, 'サーバーに接続できません'); }
+}
+
+async function doSignup() {
+  const username = document.getElementById('signup-username').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const errorEl = document.getElementById('signup-error');
+  errorEl.classList.remove('show');
+  if (!username || !password) { showError(errorEl, '名前とパスワードを入力してください'); return; }
+  try {
+    const res = await fetch(`${SERVER_URL}/api/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, icon: selectedIcon })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(errorEl, data.error); return; }
+    startChat(data.token, data.user);
+  } catch { showError(errorEl, 'サーバーに接続できません'); }
+}
+
+function openAdminAuth() { showModal('admin-auth-modal'); }
+
+async function doAdminLogin() {
+  const username = document.getElementById('admin-username').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errorEl = document.getElementById('admin-error');
+  errorEl.classList.remove('show');
+  try {
+    const res = await fetch(`${SERVER_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { showError(errorEl, data.error); return; }
+    closeModal('admin-auth-modal');
+    startChat(data.token, data.user);
+  } catch { showError(errorEl, 'サーバーに接続できません'); }
+}
+
+function showError(el, msg) { el.textContent = msg; el.classList.add('show'); }
+
+// ====== CHAT START ======
+function startChat(token, user) {
+  authToken = token;
+  currentUser = user;
+  document.getElementById('auth-screen').classList.remove('active');
+  document.getElementById('chat-screen').classList.add('active');
+
+  document.getElementById('my-icon').textContent = user.icon || (user.role === 'admin' ? '👑' : user.role === 'subadmin' ? '⭐' : '😊');
+  document.getElementById('my-username').textContent = user.username;
+  const roleBadge = document.getElementById('my-role-badge');
+  roleBadge.textContent = user.role === 'admin' ? '👑 ADMIN' : user.role === 'subadmin' ? '⭐ SUBADMIN' : '👤 USER';
+  roleBadge.className = `user-role-badge role-${user.role}`;
+
+  if (user.role === 'admin' || user.role === 'subadmin') {
+    document.getElementById('admin-btn').style.display = '';
+    document.getElementById('mod-cmds').style.display = '';
+  }
+  if (user.role === 'admin') {
+    document.getElementById('admin-cmds').style.display = '';
+    loadAdminSettings();
+  }
+
+  connectSocket();
+}
+
+// ====== SOCKET ======
+function connectSocket() {
+  socket = io(SERVER_URL);
+
+  socket.on('connect', () => {
+    socket.emit('authenticate', authToken);
+  });
+
+  socket.on('authenticated', (data) => {
+    showNotif('✅ 接続しました！', 'success');
+  });
+
+  socket.on('auth_error', (msg) => {
+    showNotif(msg, 'error');
+    logout();
+  });
+
+  socket.on('room_list', (rooms) => updateRoomList(rooms));
+  socket.on('room_list_update', (rooms) => updateRoomList(rooms));
+  socket.on('room_update', (data) => {
+    const item = document.querySelector(`.room-item[data-id="${data.id}"] .room-members`);
+    if (item) item.textContent = `${data.memberCount}人`;
+  });
+
+  socket.on('room_joined', ({ room, messages }) => {
+    currentRoom = room;
+    document.getElementById('chat-room-icon').textContent = room.icon;
+    document.getElementById('chat-room-name').textContent = room.name;
+    document.getElementById('messages').innerHTML = '';
+    messages.forEach(addMessage);
+    scrollToBottom();
+  });
+
+  socket.on('new_message', (msg) => { addMessage(msg); scrollToBottom(); });
+
+  socket.on('private_message', (pm) => {
+    addPMMessage(pm);
+    scrollToBottom();
+    if (pm.to === currentUser.username || pm.from === currentUser.username) {
+      showNotif(`💌 ${pm.from === currentUser.username ? `→ ${pm.to}` : `${pm.from} からPM`}: ${pm.content.slice(0,30)}`, 'info');
+    }
+  });
+
+  socket.on('user_joined', ({ username, role }) => {
+    const div = document.createElement('div');
+    div.className = 'msg-system';
+    div.textContent = `👋 ${username} が参加しました`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+  });
+
+  socket.on('user_left', ({ username }) => {
+    const div = document.createElement('div');
+    div.className = 'msg-system';
+    div.textContent = `👋 ${username} が退出しました`;
+    document.getElementById('messages').appendChild(div);
+    scrollToBottom();
+  });
+
+  socket.on('room_users', (users) => {
+    const list = document.getElementById('online-list');
+    list.innerHTML = '';
+    users.forEach(u => {
+      const div = document.createElement('div');
+      div.className = 'online-user';
+      div.onclick = () => startPM(u.username);
+      div.innerHTML = `<div class="online-dot"></div><div class="online-icon">${u.icon || '😊'}</div><div class="online-name">${u.username}</div>`;
+      list.appendChild(div);
+    });
+    document.getElementById('chat-room-count').textContent = `${users.length}人参加中`;
+  });
+
+  socket.on('chat_cleared', () => {
+    document.getElementById('messages').innerHTML = '';
+  });
+
+  socket.on('error_msg', (msg) => showNotif(msg, 'error'));
+  socket.on('banned', (msg) => { showNotif(msg, 'error'); setTimeout(logout, 2000); });
+  socket.on('kicked', (msg) => { showNotif(msg, 'error'); setTimeout(logout, 2000); });
+
+  // Auto join general
+  socket.on('authenticated', () => {
+    setTimeout(() => socket.emit('join_room', 'general'), 300);
+  });
+}
+
+// ====== ROOM ======
+function updateRoomList(rooms) {
+  const list = document.getElementById('room-list');
+  list.innerHTML = '';
+  rooms.forEach(room => {
+    const div = document.createElement('div');
+    div.className = 'room-item' + (currentRoom?.id === room.id ? ' active' : '');
+    div.dataset.id = room.id;
+    div.onclick = () => joinRoom(room.id);
+    div.innerHTML = `
+      <div class="room-icon-display">${room.icon}</div>
+      <div class="room-info">
+        <div class="room-name-text">${escHtml(room.name)}</div>
+        <div class="room-members">${room.memberCount}人</div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function joinRoom(roomId) {
+  document.querySelectorAll('.room-item').forEach(el => el.classList.toggle('active', el.dataset.id === roomId));
+  socket.emit('join_room', roomId);
+}
+
+function openCreateRoom() { showModal('create-room-modal'); }
+
+function createRoom() {
+  const name = document.getElementById('new-room-name').value.trim();
+  if (!name) { showNotif('部屋名を入力してください', 'error'); return; }
+  socket.emit('create_room', { name, icon: selectedRoomIcon });
+  closeModal('create-room-modal');
+  document.getElementById('new-room-name').value = '';
+}
+
+// ====== MESSAGES ======
+function addMessage(msg) {
+  if (msg.type === 'system') {
+    const div = document.createElement('div');
+    div.className = msg.omikuji ? 'msg-wrap' : 'msg-system';
+    if (msg.omikuji) {
+      div.innerHTML = `
+        <div class="msg-avatar">${msg.icon}</div>
+        <div class="msg-body">
+          <div class="msg-header">
+            <span class="msg-username ${msg.role}">${escHtml(msg.username)}</span>
+            <span class="msg-time">${formatTime(msg.timestamp)}</span>
+          </div>
+          <div class="msg-omikuji" style="border-color:${msg.omikuji.color}30;background:${msg.omikuji.color}08">
+            <span style="color:${msg.omikuji.color};font-weight:800;font-size:1.1rem">🎋 【${msg.omikuji.result}】</span>
+            <div style="margin-top:4px;font-size:0.88rem">${escHtml(msg.omikuji.msg)}</div>
+          </div>
+        </div>`;
+    } else {
+      div.textContent = msg.content;
+    }
+    document.getElementById('messages').appendChild(div);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap';
+  const isStamp = msg.type === 'stamp';
+  wrap.innerHTML = `
+    <div class="msg-avatar">${msg.icon}</div>
+    <div class="msg-body">
+      <div class="msg-header">
+        <span class="msg-username ${msg.role}" onclick="startPM('${escHtml(msg.username)}')">${escHtml(msg.username)}</span>
+        <span class="msg-time">${formatTime(msg.timestamp)}</span>
+      </div>
+      <div class="${isStamp ? 'msg-stamp' : 'msg-content'}">${escHtml(msg.content)}</div>
+    </div>`;
+  document.getElementById('messages').appendChild(wrap);
+}
+
+function addPMMessage(pm) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-pm has-pm';
+  const isMine = pm.from === currentUser.username;
+  wrap.innerHTML = `
+    <div class="msg-pm-label">💌 ${isMine ? `→ ${escHtml(pm.to)}` : `${escHtml(pm.from)} からのDM`}</div>
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <span style="font-size:1.3rem">${pm.icon}</span>
+      <div>
+        <span style="font-size:0.88rem">${escHtml(pm.content)}</span>
+        <div style="font-size:0.7rem;color:var(--text3);margin-top:2px">${formatTime(pm.timestamp)}</div>
+      </div>
+    </div>`;
+  document.getElementById('messages').appendChild(wrap);
+}
+
+// ====== SEND ======
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const content = input.value.trim();
+  if (!content || !socket) return;
+  socket.emit('send_message', { content, type: 'text' });
+  input.value = '';
+  input.style.height = 'auto';
+  hideCmdHelp();
+}
+
+function sendStamp(stamp) {
+  if (!socket) return;
+  socket.emit('send_message', { content: stamp, type: 'stamp' });
+}
+
+function startPM(username) {
+  if (username === currentUser.username) return;
+  const input = document.getElementById('chat-input');
+  input.value = `/msg ${username} `;
+  input.focus();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  if (e.key === 'Escape') { hideCmdHelp(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  // Show cmd help on /
+  const val = el.value;
+  if (val.startsWith('/')) {
+    document.getElementById('cmd-help').classList.add('show');
+    cmdHelpVisible = true;
+  } else {
+    hideCmdHelp();
+  }
+}
+
+function toggleStampBar() {
+  stampsVisible = !stampsVisible;
+  document.getElementById('stamp-bar').classList.toggle('show', stampsVisible);
+}
+
+function toggleCmdHelp() {
+  cmdHelpVisible = !cmdHelpVisible;
+  document.getElementById('cmd-help').classList.toggle('show', cmdHelpVisible);
+}
+
+function hideCmdHelp() {
+  cmdHelpVisible = false;
+  document.getElementById('cmd-help').classList.remove('show');
+}
+
+function insertCmd(cmd) {
+  const input = document.getElementById('chat-input');
+  input.value = cmd;
+  input.focus();
+  hideCmdHelp();
+}
+
+function quickCmd(cmd) {
+  if (!socket) return;
+  socket.emit('send_message', { content: cmd, type: 'text' });
+}
+
+// ====== ADMIN ======
+function toggleAdminPanel() {
+  document.getElementById('admin-panel').classList.toggle('show');
+}
+
+async function loadAdminSettings() {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/admin/settings`);
+    const data = await res.json();
+    updateToggle('toggle-admin-login', data.adminLoginEnabled);
+    updateToggle('toggle-admin-signup', data.adminSignupEnabled);
+  } catch {}
+}
+
+function updateToggle(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('on', val);
+}
+
+async function toggleSetting(key) {
+  try {
+    const toggleId = key === 'adminLoginEnabled' ? 'toggle-admin-login' : 'toggle-admin-signup';
+    const current = document.getElementById(toggleId).classList.contains('on');
+    const res = await fetch(`${SERVER_URL}/api/admin/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ [key]: !current })
+    });
+    const data = await res.json();
+    updateToggle('toggle-admin-login', data.adminLoginEnabled);
+    updateToggle('toggle-admin-signup', data.adminSignupEnabled);
+    showNotif('設定を更新しました', 'success');
+  } catch { showNotif('設定の更新に失敗しました', 'error'); }
+}
+
+// ====== UTILS ======
+function scrollToBottom() {
+  const msgs = document.getElementById('messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+let notifTimer = null;
+function showNotif(msg, type = 'info') {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = `notif show ${type}`;
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function logout() {
+  if (socket) { socket.disconnect(); socket = null; }
+  authToken = null; currentUser = null; currentRoom = null;
+  document.getElementById('chat-screen').classList.remove('active');
+  document.getElementById('auth-screen').classList.add('active');
+  document.getElementById('admin-panel').classList.remove('show');
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('online-list').innerHTML = '';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>
