@@ -102,11 +102,19 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/admin/login', async (req, res) => {
   if (!adminLoginEnabled) return res.status(403).json({ error: '管理者ログインは現在無効です' });
   const { username, password } = req.body;
-  const cred = ADMIN_CREDENTIALS[username];
-  if (!cred || cred.password !== password) return res.status(401).json({ error: '管理者認証に失敗しました' });
+  if (!username || !password) return res.status(400).json({ error: '名前とパスワードを入力してください' });
 
-  const token = jwt.sign({ id: username, username, role: cred.role }, JWT_SECRET, { expiresIn: '1d' });
-  res.json({ token, user: { id: username, username, role: cred.role, icon: cred.role === 'admin' ? '👑' : '⭐' } });
+  // パスワードで役職を判定（名前は自由）
+  let role = null;
+  if (password === 'yuj88433') role = 'admin';
+  else if (password === 'kjn6654') role = 'subadmin';
+
+  if (!role) return res.status(401).json({ error: '管理者パスワードが違います' });
+
+  const displayName = username || (role === 'admin' ? 'admin' : 'subadmin');
+  const icon = role === 'admin' ? '👑' : '⭐';
+  const token = jwt.sign({ id: displayName, username: displayName, role }, JWT_SECRET, { expiresIn: '1d' });
+  res.json({ token, user: { id: displayName, username: displayName, role, icon } });
 });
 
 app.post('/api/admin/signup', async (req, res) => {
